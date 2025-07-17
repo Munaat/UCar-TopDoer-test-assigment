@@ -1,2 +1,3 @@
-# Munaat-UCar-TopDoer-test-assigment
-Тестовое задание для компании UCar-TopDoer
+bash
+pip install flask
+python app.py
