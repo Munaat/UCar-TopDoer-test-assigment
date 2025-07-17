@@ -6,9 +6,10 @@ import json
 
 app = Flask(__name__)
 
+DB_NAME = "reviews.db"
 
 class Review:
-    """Класс для работы с БД как с ОРМ"""
+    TABLE_NAME = "reviews"
 
     def __init__(self, text, sentiment=None, created_at=None, id_=None):
         self.id = id_
@@ -17,11 +18,11 @@ class Review:
         self.created_at = created_at if created_at else datetime.utcnow().isoformat()
 
     def save(self):
-        with sqlite3.connect("reviews.db") as conn:
+        with sqlite3.connect(DB_NAME) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """
-                INSERT INTO reviews (text, sentiment, created_at)
+                f"""
+                INSERT INTO {self.TABLE_NAME} (text, sentiment, created_at)
                 VALUES (?, ?, ?)
             """,
                 (self.text, self.sentiment, self.created_at),
@@ -40,12 +41,11 @@ class Review:
 
     @classmethod
     def create_table(cls):
-        """Создает таблицу в базе данных, если она не существует, @classmethod для того что бы не было привязки к объекту"""
-        with sqlite3.connect("reviews.db") as conn:
+        with sqlite3.connect(DB_NAME) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS reviews (
+                f"""
+                CREATE TABLE IF NOT EXISTS {cls.TABLE_NAME} (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     text TEXT NOT NULL,
                     sentiment TEXT NOT NULL,
@@ -56,16 +56,15 @@ class Review:
             conn.commit()
 
     @classmethod
-    def get_all(cls, sentiment_filter=None):
-        """Запрашивает данные из БД с возможностью фильтрации по настроению, @classmethod для того что бы не было привязки к объекту"""
-        query = "SELECT id, text, sentiment, created_at FROM reviews"
+    def get_reviews(cls, sentiment_filter=None):
+        query = f"SELECT id, text, sentiment, created_at FROM {cls.TABLE_NAME}"
         params = ()
 
         if sentiment_filter:
             query += " WHERE sentiment = ?"
             params = (sentiment_filter,)
 
-        with sqlite3.connect("reviews.db") as conn:
+        with sqlite3.connect(DB_NAME) as conn:
             cursor = conn.cursor()
             cursor.execute(query, params)
             rows = cursor.fetchall()
@@ -117,7 +116,7 @@ def post_reviews():
 @app.route("/reviews", methods=["GET"])
 def get_reviews():
     sentiment_filter = request.args.get("sentiment")
-    reviews = Review.get_all(sentiment_filter=sentiment_filter)
+    reviews = Review.get_reviews(sentiment_filter=sentiment_filter)
     return json.dumps([r.to_dict() for r in reviews], indent=4, ensure_ascii=False), 200
 
 
