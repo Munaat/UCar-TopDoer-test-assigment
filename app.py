@@ -1,12 +1,12 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from datetime import datetime
 import sqlite3
-import json
 
 
 app = Flask(__name__)
-
 DB_NAME = "reviews.db"
+app.json.ensure_ascii = False
+
 
 class Review:
     TABLE_NAME = "reviews"
@@ -103,21 +103,21 @@ def post_reviews():
 
     if not text:
         return (
-            json.dumps(
-                {"error": "Отсутствует переменная 'text'"}, indent=4, ensure_ascii=False
+            jsonify(
+                {"error": "Отсутствует переменная 'text'"}
             ),
             400,
         )
 
     review = Review(text).save()
-    return json.dumps(review.to_dict(), indent=4, ensure_ascii=False), 201
+    return jsonify(review.to_dict()), 201
 
 
 @app.route("/reviews", methods=["GET"])
 def get_reviews():
     sentiment_filter = request.args.get("sentiment")
     reviews = Review.get_reviews(sentiment_filter=sentiment_filter)
-    return json.dumps([r.to_dict() for r in reviews], indent=4, ensure_ascii=False), 200
+    return jsonify([r.to_dict() for r in reviews]), 200
 
 
 if __name__ == "__main__":
